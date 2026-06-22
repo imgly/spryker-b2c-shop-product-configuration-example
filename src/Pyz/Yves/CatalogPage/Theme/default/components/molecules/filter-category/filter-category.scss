@@ -1,0 +1,83 @@
+@mixin catalog-page-filter-category($name: '.filter-category') {
+    #{$name} {
+        &--sidebar {
+            padding-bottom: rem(4);
+        }
+
+        &#{$name} {
+            @include helper-breakpoint-media-min($xl-min) {
+                display: block;
+            }
+        }
+
+        &__category-toggle-button {
+            @include helper-effect-transition(transform);
+            color: $setting-color-black;
+            margin-right: rem(5);
+            background-color: $setting-color-transparent;
+            cursor: pointer;
+
+            &--collapsed {
+                transform: rotate(-90deg);
+            }
+        }
+
+        &__category-target {
+            @include helper-effect-transition(grid-template-rows);
+            display: grid;
+            grid-template-rows: 1fr;
+
+            &--hidden {
+                grid-template-rows: 0fr;
+            }
+        }
+
+        &__category-target-inner {
+            overflow: hidden;
+        }
+
+        &__category-row {
+            &--no-children {
+                margin-left: rem(16);
+            }
+        }
+
+        #{$name}__item {
+            display: flex;
+            margin: 0 0 0 rem(4);
+            font: 400 rem(15) $setting-font-family;
+
+            &--level-1 {
+                margin: 0;
+            }
+
+            [disabled] {
+                color: $setting-color-gray-6;
+            }
+        }
+
+        #{$name}__link {
+            font: 400 rem(15) $setting-font-family;
+            margin-bottom: rem(14);
+            color: $setting-color-black;
+            background: $setting-color-transparent;
+            cursor: pointer;
+
+            &:hover {
+                color: $setting-color-alt;
+            }
+
+            &[disabled],
+            &--disabled {
+                color: $setting-color-dark;
+                cursor: default;
+            }
+
+            &--active {
+                color: $setting-color-alt;
+            }
+        }
+    }
+}
+
+@include catalog-page-filter-category;

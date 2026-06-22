@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+  Designer integration — order state-machine fragment showing where the
+  custom-design print hand-off fits. In a real deployment you would merge the
+  `send to fulfillment` step into the process actually assigned to the
+  configurable products (e.g. extend DummyPayment01), rather than running this
+  standalone. The command "TshirtDesigner/SendToFulfillment" matches the key
+  registered in OmsDependencyProvider.
+-->
+<statemachine
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://static.spryker.com/oms-01.xsd">
+
+  <process name="TshirtDesignerFulfillment01" main="true">
+    <states>
+      <state name="paid" display="oms.state.paid"/>
+      <state name="sent to fulfillment" display="oms.state.sent-to-fulfillment"/>
+      <state name="in production" display="oms.state.in-production"/>
+      <state name="shipped" display="oms.state.shipped"/>
+    </states>
+
+    <transitions>
+      <transition happy="true">
+        <source>paid</source>
+        <target>sent to fulfillment</target>
+        <event>send to fulfillment</event>
+      </transition>
+      <transition happy="true">
+        <source>sent to fulfillment</source>
+        <target>in production</target>
+        <event>confirm production</event>
+      </transition>
+      <transition happy="true">
+        <source>in production</source>
+        <target>shipped</target>
+        <event>ship</event>
+      </transition>
+    </transitions>
+
+    <events>
+      <event name="send to fulfillment" command="TshirtDesigner/SendToFulfillment" onEnter="true"/>
+      <event name="confirm production" manual="true"/>
+      <event name="ship" manual="true"/>
+    </events>
+  </process>
+</statemachine>

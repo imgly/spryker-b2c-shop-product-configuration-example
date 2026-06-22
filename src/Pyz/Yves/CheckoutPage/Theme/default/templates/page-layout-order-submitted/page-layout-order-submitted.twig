@@ -1,0 +1,53 @@
+{% extends template('page-layout-main') %}
+
+{% define data = {
+    title: required,
+    message: required
+} %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block title %}{% endblock %}
+
+{% block content %}
+    <div class="page-layout-checkout success-page">
+        <h1 class="title title--checkout-success title--with-border">{{data.title}}</h1>
+        <p class="success-page__text">
+            {% if data.quote is defined %}
+                {% widget 'UpdateOrderCheckoutSuccessTitleWidget' args [data.message, data.quote] only %}{% endwidget %}
+            {% else %}
+                {{ data.message }}
+            {% endif %}
+        </p>
+
+        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+            <a class="link link--darkest link--without-underline" href="{{ url('customer/overview') }}">{{ 'checkout.step.success.link' | trans }}
+                {% include atom('icon') with {
+                    modifiers: ['small', 'checkout-success'],
+                    data: {
+                        name: 'chevron-right'
+                    }
+                } only %}
+            </a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block eventTracker %}
+    {% if data.quote is defined %}
+        {% set events = {
+            list: events.list,
+            data: events.data | merge({
+                page: 'CHECKOUT_SUCCESS',
+                products: ((data.quote.items | default([])) | merge(data.quote.bundleItems | default([]))) | map(item => {
+                    sku: item.sku,
+                    price: can('SeePricePermissionPlugin') ? item.sumSubtotalAggregation : null,
+                    quantity: item.quantity,
+                }),
+                total: can('SeePricePermissionPlugin') ? data.quote.totals.grandTotal : null,
+            }),
+        } %}
+    {% endif %}
+
+    {{ parent() }}
+{% endblock %}
