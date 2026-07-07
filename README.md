@@ -12,11 +12,17 @@ Spryker B2C Demo Shop is a collection of Spryker B2C-specific features. It suits
 This project includes a reference integration of the IMG.LY [CE.SDK](https://img.ly/creative-sdk)
 t-shirt/jersey designer as a Spryker product configurator (configurator key
 `TSHIRT_DESIGNER`). The browser-based designer lives in [`t-shirt-designer/`](./t-shirt-designer);
-the backend half (price extractor, OMS command, state machine, import data) lives
-under `src/Pyz/…` and `config/Zed/oms/…`.
+the backend half (server-side pricing, OMS command, state machine, import data)
+lives under `src/Pyz/…` and `config/Zed/oms/…`.
 
 * **Architecture & wiring:** [`t-shirt-designer/SPRYKER_INTEGRATION.md`](./t-shirt-designer/SPRYKER_INTEGRATION.md)
 * **Run the designer:** [`t-shirt-designer/README.md`](./t-shirt-designer/README.md)
+
+Everything outside the files mapped in the integration guide is an unmodified
+snapshot of the upstream B2C Demo Shop (`spryker-shop/b2c-demo-shop`). In
+particular, `npm audit` findings in the root toolchain are inherited from
+upstream — the designer app (`t-shirt-designer/`) has its own dependency tree
+and audits clean.
 
 ## B2C Demo Shop quick start
 

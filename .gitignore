@@ -109,3 +109,6 @@ docker
 
 # Generated icon sprite
 /frontend/assets/global/default/icons/sprite.svg
+
+# Claude Code local settings (launch.json is shared)
+.claude/settings.local.json

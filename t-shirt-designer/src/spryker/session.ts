@@ -30,7 +30,6 @@ export function readSprykerSession(
     sku,
     glueBaseUrl,
     quantity: Number(params.get('quantity')) || 1,
-    cartId: params.get('cartId') ?? undefined,
     anonymousId: params.get('anonymousId') ?? undefined,
     returnUrl: params.get('returnUrl') ?? undefined,
     signature: params.get('signature') ?? undefined

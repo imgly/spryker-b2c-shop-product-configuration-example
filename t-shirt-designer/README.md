@@ -16,8 +16,14 @@ Spryker context, posts the design back to the Glue Storefront API as a
 
 ```bash
 npm install
-npm run dev   # http://localhost:5173  (standalone demo; add-to-cart = alert)
+cp .env.example .env   # put your CE.SDK license key in VITE_CESDK_LICENSE
+npm run dev            # http://localhost:5173  (standalone demo; add-to-cart = alert)
 ```
+
+> **License behavior:** without a key the editor runs in evaluation mode with a
+> watermark — fine for trying the demo. An **expired or invalid** key fails
+> hard ("license expired" in the console, editor does not load); fix or remove
+> the key in `.env`. Get a trial key at https://img.ly/forms/free-trial.
 
 Embedded (Spryker configurator) mode activates automatically when opened with a
 SKU + Glue base URL:
@@ -34,9 +40,15 @@ http://localhost:5173/?sku=001_25904006&quantity=1&glueBaseUrl=https://glue.eu.s
   `ProductInfo`, `FooterTabs`) around the CE.SDK editor; product identity in
   `src/app/product-catalog.ts`.
 
-The backend half (price extractor, OMS command, state machine, import CSV) lives
-in the parent Spryker project under `src/Pyz/…` and `config/Zed/oms/…` — also
-mapped in [SPRYKER_INTEGRATION.md](./SPRYKER_INTEGRATION.md).
+The backend half (server-side pricing, OMS command, state machine, import CSV)
+lives in the parent Spryker project under `src/Pyz/…` and `config/Zed/oms/…` —
+also mapped in [SPRYKER_INTEGRATION.md](./SPRYKER_INTEGRATION.md).
+
+To test the add-to-cart wire contract without a running Spryker instance:
+
+```bash
+npm run mock:glue   # mock Glue API on http://localhost:9000
+```
 
 ---
 
@@ -50,27 +62,21 @@ The sections below are from the original IMG.LY starter kit.
 
 ![T-Shirt Designer starter kit showing a t-shirt customization interface](./hero.webp)
 
+This app began as [`imgly/starterkit-t-shirt-designer-react-web`](https://github.com/imgly/starterkit-t-shirt-designer-react-web)
+and is vendored into this Spryker project — there is nothing separate to clone.
+
 ## Getting Started
 
-### Clone the Repository
+### Download Assets (optional — self-hosting)
+
+CE.SDK needs engine assets (fonts, icons, UI elements). **This app loads them
+from the IMG.LY CDN by default** — no download needed for development. To
+self-host them instead (recommended for production), download the bundle into
+`public/` and set `baseURL: '/assets'` in the CE.SDK config (`src/index.tsx`).
+The bundle version must match the installed `@cesdk/cesdk-js` version:
 
 ```bash
-git clone https://github.com/imgly/starterkit-t-shirt-designer-react-web.git
-cd starterkit-t-shirt-designer-react-web
-```
-
-### Install Dependencies
-
-```bash
-npm install
-```
-
-### Download Assets
-
-CE.SDK requires engine assets (fonts, icons, UI elements) served from your `public/` directory.
-
-```bash
-curl -O https://cdn.img.ly/packages/imgly/cesdk-js/$UBQ_VERSION$/imgly-assets.zip
+curl -O https://cdn.img.ly/packages/imgly/cesdk-js/1.77.0/imgly-assets.zip
 unzip imgly-assets.zip -d public/
 rm imgly-assets.zip
 ```
@@ -87,21 +93,23 @@ Open `http://localhost:5173` in your browser.
 
 ### T-Shirt Product
 
-The t-shirt product is configured in `src/product-catalog.ts`:
+The product identity (label, prices, print areas, mockup images, colors,
+sizes) is configured in `src/app/product-catalog.ts`:
 
 ```typescript
 export const PRODUCT_SAMPLES: ProductConfig[] = [
   {
     id: 'tshirt',
-    label: 'Mens T-Shirt',
+    label: 'TECHSTAR ARCH',
+    brand: 'alpinestars',
     designUnit: 'Inch',
-    unitPrice: 19.99,
+    unitPrice: 39.95,        // display only — Spryker prices server-side
     areas: [
-      { id: 'front', label: 'Front', pageSize: { width: 12, height: 12 } },
-      { id: 'back', label: 'Back', pageSize: { width: 12, height: 12 } }
+      { id: 'front', label: 'Front', pageSize: { width: 20, height: 20 }, mockup: {/* … */} },
+      { id: 'back',  label: 'Back',  pageSize: { width: 20, height: 20 }, mockup: {/* … */} }
     ],
     colors: [/* 10 color options */],
-    sizes: [{ id: 'XS' }, { id: 'S' }, { id: 'M' }, { id: 'L' }, { id: 'XL' }]
+    sizes: [/* XS – L */]
   }
 ];
 ```
@@ -129,29 +137,29 @@ See [Localization](https://img.ly/docs/cesdk/web/ui-styling/localization/) for s
 
 ```
 src/
-├── app/                          # Demo application
-├── imgly/
-│   ├── backdrop.ts               # Backdrop management
+├── app/                          # Louis.de-style PDP chrome + product logic
+│   ├── App.tsx                       # Orchestrates editor, product state, add-to-cart
+│   ├── product-catalog.ts            # Product identity (areas, colors, prices)
+│   ├── utils/product.ts              # Scene setup + print-asset download helpers
+│   └── …                             # UI components (StoreHeader, ProductInfo, …)
+├── imgly/                        # Product-agnostic CE.SDK layer
 │   ├── config/
 │   │   ├── actions.ts                # Export/import actions
 │   │   ├── features.ts               # Feature toggles
 │   │   ├── i18n.ts                   # Translations
 │   │   ├── plugin.ts                 # Main configuration plugin
 │   │   ├── settings.ts               # Engine settings
-│   │   └── ui/
-│   │       ├── canvas.ts                 # Canvas configuration
-│   │       ├── components.ts             # Custom component registration
-│   │       ├── dock.ts                   # Dock layout configuration
-│   │       ├── index.ts                  # Combines UI customization exports
-│   │       ├── inspectorBar.ts           # Inspector bar layout
-│   │       ├── navigationBar.ts          # Navigation bar layout
-│   │       └── panel.ts                  # Panel configuration
-│   ├── constants.ts              # Configuration constants
+│   │   └── ui/                       # Dock, inspector bar, panels, canvas
+│   ├── plugins/
+│   │   └── product-backdrop.ts       # Mockup backdrops + product.* actions
 │   ├── index.ts                  # Editor initialization function
-│   ├── mask.ts                   # Mask handling
-│   ├── page.ts                   # Scene and area management
 │   └── types.ts                  # TypeScript type definitions
-└── index.tsx                 # Application entry point
+├── spryker/                      # Spryker integration adapter (the reference part)
+│   ├── types.ts                      # Wire contract (productConfigurationInstance)
+│   ├── session.ts                    # Launch-context parsing (?sku=…&glueBaseUrl=…)
+│   ├── productConfiguration.ts       # Scene → configuration + print-asset export
+│   └── glueClient.ts                 # POST /guest-cart-items
+└── index.tsx                     # Application entry point (CE.SDK config + license)
 ```
 
 ## Key Capabilities
@@ -160,7 +168,8 @@ src/
 - **Color Customization** – 10 color options with real-time preview
 - **Size Selection** – XS to XL with quantity counters
 - **Real-time Mockup** – See designs on product mockups
-- **E-commerce Cart** – Add to cart with price calculation
+- **E-commerce Cart** – Add to cart via the Spryker Glue API; the price is
+  computed server-side from the configuration (standalone demo: alert)
 - **Export** – PDF and PNG export for all areas
 
 ## Prerequisites
@@ -173,8 +182,9 @@ src/
 | Issue | Solution |
 |-------|----------|
 | Editor doesn't load | Verify assets are accessible at `baseURL` |
+| Editor doesn't load, console says "license … expired/invalid" | The key in `.env` is expired or wrong — replace it (or remove it to run watermarked in evaluation mode) |
 | Mockups don't appear | Check `public/assets/products/tshirt/` directory |
-| Watermark appears | Add your license key |
+| Watermark appears | Add your license key (`VITE_CESDK_LICENSE` in `.env`) |
 
 ## Documentation
 

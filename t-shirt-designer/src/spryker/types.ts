@@ -4,8 +4,8 @@
  * These mirror the Spryker transfer objects involved in the product
  * configurator flow. Field names match the JSON the backend reads:
  *
- *  - The Client price plugin (`TshirtDesignerPriceExtractorPlugin`) reads
- *    `configuration.areas[].printed`.
+ *  - The Zed cart item expander (`TshirtDesignerPriceItemExpanderPlugin`)
+ *    reads `configuration.areas[].printed` to compute the authoritative price.
  *  - The OMS command (`SendDesignToFulfillmentCommandPlugin`) reads
  *    `configuration.designArchiveUrl`, `configuration.color`,
  *    `configuration.areas`.
@@ -29,9 +29,11 @@ export interface SprykerSession {
   quantity: number;
   /** Base URL of the Glue Storefront API, e.g. `https://glue.eu.spryker.local`. */
   glueBaseUrl: string;
-  /** Existing cart UUID to add the item to (omit to create a guest cart). */
-  cartId?: string;
-  /** Anonymous customer id for guest carts (X-Anonymous-Customer-Unique-Id). */
+  /**
+   * Anonymous customer id for guest carts (X-Anonymous-Customer-Unique-Id).
+   * Effectively required: the Glue guest-cart endpoints reject requests
+   * without it. Also reused as the CE.SDK `userId` for MAU tracking.
+   */
   anonymousId?: string;
   /** Storefront URL to return the shopper to after add-to-cart. */
   returnUrl?: string;
@@ -54,6 +56,10 @@ export interface ConfigurationArea {
  * The source-of-truth configuration JSON. Stringified into
  * `productConfigurationInstance.configuration`. The backend recomputes price
  * and routes fulfillment from exactly these fields.
+ *
+ * Deliberately out of scope for this reference: variant selection (size). In
+ * a real shop the chosen size maps to a different concrete SKU *before* the
+ * designer is launched — it is not part of the design configuration.
  */
 export interface DesignConfiguration {
   color: string;

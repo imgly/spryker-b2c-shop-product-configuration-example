@@ -2,12 +2,16 @@
  * Spryker integration — Glue Storefront API client (headless cart flow).
  *
  * On "IN DEN WARENKORB" the designer posts the configured item straight to the
- * Glue API. Spryker persists the productConfigurationInstance, and the Client
- * `TshirtDesignerPriceExtractorPlugin` recomputes the authoritative price
+ * Glue API. Spryker persists the productConfigurationInstance, and the Zed
+ * `TshirtDesignerPriceItemExpanderPlugin` recomputes the authoritative price
  * server-side — the client never sets the cart price.
  *
  * SKETCH: error handling, auth (OAuth for logged-in customers), CSRF and cart
  * lifecycle are intentionally thin. The shape of the request is the point.
+ * The designer runs on its own origin, so the Glue API must send CORS headers
+ * allowing it — set SPRYKER_GLUE_APPLICATION_CORS_ALLOW_ORIGIN (see
+ * GLUE_APPLICATION_CORS_ALLOW_ORIGIN in config_default.php; the mock server in
+ * ../../mock-glue-server.mjs mirrors the required headers).
  *
  * Reference: Spryker "Managing guest cart items" Glue API + the
  * `product-configurations-rest-api` module (already in composer.json) which

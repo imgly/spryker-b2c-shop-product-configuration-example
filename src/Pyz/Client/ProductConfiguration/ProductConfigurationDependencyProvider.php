@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace Pyz\Client\ProductConfiguration;
 
-use Pyz\Client\ProductConfiguration\Plugin\TshirtDesignerPriceExtractorPlugin;
 use Spryker\Client\ProductConfiguration\Plugin\PriceProductVolumeProductConfigurationPriceExtractorPlugin;
 use Spryker\Client\ProductConfiguration\ProductConfigurationDependencyProvider as SprykerProductConfigurationDependencyProvider;
 use SprykerShop\Client\DateTimeConfiguratorPageExample\Plugin\ProductConfiguration\ExampleDateTimeProductConfiguratorRequestExpanderPlugin;
@@ -36,9 +35,6 @@ class ProductConfigurationDependencyProvider extends SprykerProductConfiguration
     {
         return [
             new PriceProductVolumeProductConfigurationPriceExtractorPlugin(),
-            // Designer integration: authoritative server-side price for
-            // TSHIRT_DESIGNER configurations (base + per-printed-area surcharge).
-            new TshirtDesignerPriceExtractorPlugin(),
         ];
     }
 }

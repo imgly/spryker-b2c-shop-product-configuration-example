@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace Pyz\Zed\Cart;
 
+use Pyz\Zed\ProductConfiguration\Communication\Plugin\Cart\TshirtDesignerPriceItemExpanderPlugin;
 use Spryker\Zed\AvailabilityCartConnector\Communication\Plugin\Cart\CheckAvailabilityPlugin;
 use Spryker\Zed\Cart\CartDependencyProvider as SprykerCartDependencyProvider;
 use Spryker\Zed\Cart\Communication\Plugin\CleanUpItemsPreReloadPlugin;
@@ -99,6 +100,11 @@ class CartDependencyProvider extends SprykerCartDependencyProvider
             new ConfiguredBundleGroupKeyItemExpanderPlugin(),
             new ProductUrlItemExpanderPlugin(),
             new SanitizeCartShipmentItemExpanderPlugin(),
+            // Designer integration: recompute the authoritative TSHIRT_DESIGNER
+            // price from the configuration JSON, overwriting client-sent prices.
+            // Must run before ProductConfigurationGroupKeyItemExpanderPlugin,
+            // which hashes the instance (including prices) into the group key.
+            new TshirtDesignerPriceItemExpanderPlugin(),
             new ProductConfigurationGroupKeyItemExpanderPlugin(),
             new RemoveQuotePaymentCartItemExpanderPlugin(),
         ];
@@ -128,6 +134,7 @@ class CartDependencyProvider extends SprykerCartDependencyProvider
             new ConfiguredBundleGroupKeyItemExpanderPlugin(),
             new ProductUrlItemExpanderPlugin(),
             new SanitizeCartShipmentItemExpanderPlugin(),
+            new TshirtDesignerPriceItemExpanderPlugin(),
             new ProductConfigurationGroupKeyItemExpanderPlugin(),
             new RemoveQuotePaymentCartItemExpanderPlugin(),
             new PriceItemExpanderPlugin(),

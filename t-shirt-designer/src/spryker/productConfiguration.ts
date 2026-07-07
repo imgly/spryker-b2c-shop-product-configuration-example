@@ -4,9 +4,15 @@
  * This is the bridge between CE.SDK (the scene) and Spryker (the cart). It
  * produces the exact JSON shape the backend PHP plugins consume, so the two
  * sides stay in lock-step.
+ *
+ * Pricing note: the price is computed exclusively server-side
+ * (`TshirtDesignerPriceItemExpanderPlugin`, Zed) from `areas[].printed`. The
+ * designer never sends a price — anything a client sent would be overwritten.
  */
 
 import type CreativeEditorSDK from '@cesdk/cesdk-js';
+
+import { BACKDROP_BLOCK_KIND } from '../imgly/plugins/product-backdrop';
 
 import {
   CONFIGURATOR_KEY,
@@ -17,16 +23,14 @@ import {
 } from './types';
 
 /**
- * Price constants — MUST mirror `TshirtDesignerPriceExtractorPlugin` (PHP).
- * The server price is authoritative; this is for in-editor display only.
- */
-const BASE_UNIT_PRICE_GROSS = 2995; // cents
-const PRINT_AREA_SURCHARGE_GROSS = 500; // cents per printed area
-
-/**
  * Inspect each product page (area) and decide whether the shopper actually
- * placed content on it. A page is "printed" when it has any child block other
- * than the mockup backdrop.
+ * placed content on it.
+ *
+ * The ProductBackdrop plugin keeps mockup backdrops at scene level (they are
+ * never page children), so page children are exactly the shopper's design
+ * blocks. The kind check makes this robust against the plugin ever parenting
+ * a backdrop into the page: backdrop blocks are tagged with
+ * `BACKDROP_BLOCK_KIND` via `engine.block.setKind()`.
  */
 export function collectPrintedAreas(
   cesdk: CreativeEditorSDK,
@@ -41,36 +45,76 @@ export function collectPrintedAreas(
   return areaIds.map((id) => {
     const page = pagesByName.get(id);
     if (page == null) return { id, printed: false };
-    // Backdrop is a graphic the plugin tags; treat any extra child as design.
-    const children = engine.block.getChildren(page);
-    const designChildren = children.filter((child) => {
-      const name = engine.block.getName(child);
-      return name !== 'backdrop' && name !== 'mockup';
-    });
+    const designChildren = engine.block
+      .getChildren(page)
+      .filter((child) => engine.block.getKind(child) !== BACKDROP_BLOCK_KIND);
     return { id, printed: designChildren.length > 0 };
   });
 }
 
-/** Gross unit price in cents for the current configuration (display only). */
-export function computeUnitPriceGross(areas: ConfigurationArea[]): number {
-  const printed = areas.filter((a) => a.printed).length;
-  return BASE_UNIT_PRICE_GROSS + printed * PRINT_AREA_SURCHARGE_GROSS;
+/**
+ * Everything fulfillment needs to print the design, plus the re-editable
+ * source. This is the payload `exportAndUploadDesign` hands to object storage.
+ */
+export interface PrintAssetBundle {
+  /** CE.SDK scene archive (.zip) — the re-editable source of the design. */
+  archive: Blob;
+  /** Print-ready PDF per area, keyed by area id (`front`, `back`, ...). */
+  pdfs: Record<string, Blob>;
+  /** Small PNG preview per area, keyed by area id. */
+  thumbnails: Record<string, Blob>;
 }
 
 /**
- * Export the scene + per-area print files and hand them to object storage.
+ * Render the print-ready assets for every area plus the scene archive.
+ * A scene archive alone is not printable without a CreativeEngine on the
+ * receiving side — fulfillment needs the rendered PDFs.
+ */
+export async function exportPrintAssets(
+  cesdk: CreativeEditorSDK
+): Promise<PrintAssetBundle> {
+  const engine = cesdk.engine;
+  const archive = await engine.scene.saveToArchive();
+  const pdfs: Record<string, Blob> = {};
+  const thumbnails: Record<string, Blob> = {};
+
+  for (const page of engine.block.findByType('page')) {
+    const areaId = engine.block.getName(page);
+    // Temporarily disable the page stroke so it doesn't appear in the export.
+    engine.block.setStrokeEnabled(page, false);
+    try {
+      pdfs[areaId] = await engine.block.export(page, {
+        mimeType: 'application/pdf'
+      });
+      thumbnails[areaId] = await engine.block.export(page, {
+        mimeType: 'image/png',
+        targetWidth: 200,
+        targetHeight: 200
+      });
+    } finally {
+      engine.block.setStrokeEnabled(page, true);
+    }
+  }
+
+  return { archive, pdfs, thumbnails };
+}
+
+/**
+ * Export the print assets and hand them to object storage.
  *
- * SKETCH: the heavy PNG/PDF/scene assets must not travel through Spryker — only
- * their URL does (see `SendDesignToFulfillmentCommandPlugin`). Replace the body
- * with a real upload (S3 presigned PUT, your DAM, etc.) and return the URL.
+ * SKETCH: the heavy PDF/PNG/scene assets must not travel through Spryker —
+ * only their URL does (see `SendDesignToFulfillmentCommandPlugin`). Replace
+ * the TODO with a real upload (S3 presigned PUT, your DAM, ...) and return
+ * the URL of the uploaded bundle.
  */
 export async function exportAndUploadDesign(
   cesdk: CreativeEditorSDK
 ): Promise<string | null> {
-  const archive = await cesdk.engine.scene.saveToArchive();
-  // TODO: upload `archive` (a Blob) to object storage and return its URL.
-  // return await uploadToObjectStorage(archive);
-  void archive;
+  const bundle = await exportPrintAssets(cesdk);
+  // TODO: upload `bundle` (archive + per-area PDFs/thumbnails) to object
+  // storage and return its URL, e.g.:
+  // return await uploadToObjectStorage(bundle);
+  void bundle;
   return null;
 }
 
@@ -99,6 +143,8 @@ export async function buildProductConfigurationInstance(
 
   return {
     configuratorKey: CONFIGURATOR_KEY,
+    // NOTE: once the upload above is real, gate this on its success —
+    // isComplete is what allows the item through checkout.
     isComplete: true,
     configuration: JSON.stringify(configuration),
     displayData: JSON.stringify(displayData)

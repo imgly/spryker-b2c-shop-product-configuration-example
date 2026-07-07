@@ -45,8 +45,12 @@ import type { BackdropConfig, Source } from '../types';
 
 // ─── Internal Constants ───────────────────────────────────────────────────────
 
-/** Block-kind tag used to identify backdrop graphic blocks in the scene. */
-const BACKDROP_BLOCK_KIND = 'backdrop_image';
+/**
+ * Block-kind tag used to identify backdrop graphic blocks in the scene.
+ * Exported so integrations (e.g. src/spryker/productConfiguration.ts) can
+ * distinguish backdrop blocks from shopper-placed design content.
+ */
+export const BACKDROP_BLOCK_KIND = 'backdrop_image';
 
 /** Metadata key under which each page stores its backdrop config. */
 const BACKDROP_CONFIG_METADATA_KEY = 'backdrop_config';

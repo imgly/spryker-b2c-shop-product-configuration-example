@@ -13,21 +13,30 @@ import type CreativeEditorSDK from '@cesdk/cesdk-js';
 
 import App from './app/App';
 import styles from './app/App.module.css';
+import { readSprykerSession } from './spryker/session';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
+// When Spryker opened the designer as the external configurator, reuse the
+// shopper's anonymous id so CE.SDK user (MAU) tracking counts real shoppers.
+const sprykerSession = readSprykerSession();
+
 const config = {
-  userId: 'starterkit-t-shirt-designer-user',
+  // Set VITE_CESDK_LICENSE in .env (see .env.example). Without it the editor
+  // runs in trial mode and renders a watermark.
+  license: import.meta.env.VITE_CESDK_LICENSE,
+  userId: sprykerSession?.anonymousId ?? 'starterkit-t-shirt-designer-user',
 
   // Enable single page mode for t-shirt editing (Front/Back areas)
   featureFlags: {
     singlePageMode: true
-  },
+  }
 
-  // Local assets for development
-
+  // Engine assets (fonts, icons, UI) load from the IMG.LY CDN by default. To
+  // self-host them instead, unzip the imgly-assets bundle into public/ and set
+  // `baseURL: '/assets'` here (see README "Download Assets").
 };
 
 // ============================================================================

@@ -148,8 +148,8 @@ export default function App({ cesdk, children }: AppProps) {
 
     // Embedded in Spryker: build the productConfigurationInstance from the live
     // scene and POST it to the Glue Storefront API. The server recomputes the
-    // authoritative price (TshirtDesignerPriceExtractorPlugin) — we never send
-    // it. See ../spryker and SPRYKER_INTEGRATION.md.
+    // authoritative price (TshirtDesignerPriceItemExpanderPlugin, Zed) — we
+    // never send it. See ../spryker and SPRYKER_INTEGRATION.md.
     if (sprykerSession && cesdk) {
       const instance = await buildProductConfigurationInstance(
         cesdk,
